@@ -468,3 +468,56 @@ Returns the list of edges, including the one that Willam Dafoe acted in and the 
   </tr>
 </table>
 
+## Multiple Labels
+
+MATCH clause supports multiple labels for both vertices and edges.
+
+An example graph can be:
+```postgresql
+SELECT * FROM cypher('graph_name', $$
+    CREATE
+      (jm :Engineer {name:'James'}),
+      (rb :Director {name:'Robert'}),
+      (sr :Writer   {name:'Sara'}),
+      (jm)-[:MANAGES]-> (:Product {name:'Product A'}),
+      (jm)-[:DEVELOPS]->(:Product {name:'Product B'}),
+      (jm)-[:TESTS]->   (:Product {name:'Product C'}),
+      (rb)-[:DIRECTS]-> (:Dept    {name:'Dept A'}),
+      (sr)-[:WRITES]->  (:Blog    {name:'Blog A'})
+$$) as (r agtype);
+```
+
+### The OR expression
+
+The OR label expression is represented by the pipe operator `|`. Any number of labels can be combined with pipe as a delimiter. For example, `A|B|C|..|n`.
+
+It is equivalent to the union set operation. Therefore, the label expression `A|B` targets entities that belong to either label `A`, or `B`, or both.
+
+For example, find people who are `Writer` or `Director`:
+```postgresql
+SELECT * FROM cypher('graph_name', $$
+    MATCH (n:Writer|Director)
+    RETURN n.name
+$$) as (name agtype);
+```
+```txt
+   name
+----------
+ "Robert"
+ "Sara"
+```
+
+Find products that James `MANAGES` or `DEVELOPS`:
+```postgresql
+SELECT * FROM cypher('graph_name', $$
+    MATCH (:Engineer{name:'James'})-[:MANAGES|DEVELOPS]->(n:Product)
+    RETURN n.name
+$$) as (products agtype);
+```
+```txt
+  products
+-------------
+ "Product A"
+ "Product B"
+```
+
